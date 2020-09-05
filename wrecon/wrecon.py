@@ -1,4 +1,4 @@
-import requests,  urllib3
+import requests,  urllib3, argparse, sys
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 import colorama
@@ -13,9 +13,9 @@ GRAY = colorama.Fore.LIGHTBLACK_EX
 RESET = colorama.Fore.RESET
 RED = colorama.Fore.RED
 
-boolean = False
+scan_robots_and_sitemap = False
 
-# Clase de arvore de url
+# Url tree class
 class Tree (object):
     def __init__(self, data):
         self.children = []
@@ -30,13 +30,22 @@ class Tree (object):
     def __repr__(self):
         return '<tree node representation>'
 
+class Wrecon:
+
+    def parse_args(args):
+        parser = argparse.ArgumentParser(description="WRecon")
+        parser.add_argument("-u", "--url", help="Url link")
+        parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
+        
+        return parser.parse_args()
+
 def crawl(url):
-    ##Retorna todos os URLs encontradas entre as tags
+    ##Returns all URLs found between tags
     children =[]
-    global boolean
-    if not boolean: 
+    global scan_robots_and_sitemap
+    if not scan_robots_and_sitemap: 
         children =robots(url)
-    boolean = True
+    scan_robots_and_sitemap = True
 
     tags = [["a","href"],["link","href"],["script","src"],["img","src"],["source","src"]]
     try: 
@@ -61,15 +70,15 @@ def crawl(url):
 
 def captura(url,href): 
     ## verifica se é um link dentro das tags    
-    if complementarLinks(href):
+    if is_fragment_identifier(href):
         href = url+'/'+ href
     else:
         href = urljoin(url, href)
-        href_analisada = urlparse(href)
-        href = href_analisada.scheme + "://" + href_analisada.netloc + href_analisada.path
+        href_analize = urlparse(href)
+        href = href_analize.scheme + "://" + href_analize.netloc + href_analize.path
     ## definie se eh url interna ou externa
-    nome_dominio = urlparse(url).netloc
-    if nome_dominio not in href:
+    domain_name = urlparse(url).netloc
+    if domain_name not in href:
         return href  
     else:
         return href
@@ -93,26 +102,29 @@ def valida_call_back_url(url):
 
 
 def robots(url):
-    urls_internas = []
-    link_robots=url+'/robots.txt'
+    urls_scanned = []
+    ## root of website to get the robots.txt and sitemap.xml
+    parsed_uri = urlparse(url)
+    url_raiz = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    link_robots=url_raiz+'/robots.txt'
     try:
         data = requests.get(link_robots,verify=False, timeout=3)
         if data.status_code == 200:
-            urls_internas.append(Tree(link_robots))
+            urls_scanned.append(Tree(link_robots))
             texto = data.text.splitlines()
             for linha in texto:
                 if ' /' in linha:
                     link = linha.split(' /')[1]
                     if link is not "":
-                            urls_internas.append(Tree(url+'/'+link))
+                            urls_scanned.append(Tree(url+'/'+link))
     except requests.exceptions.Timeout:
                     print('Timeout')
 
-    link_sitemap=url+'/sitemap.xml'
+    link_sitemap=url_raiz+'/sitemap.xml'
     try:
         data = requests.get(link_sitemap,verify=False, timeout=3)
         if data.status_code == 200:
-            urls_internas.append(Tree(link_sitemap))
+            urls_scanned.append(Tree(link_sitemap))
             texto = data.text.splitlines()
             for linha in texto:
                 if '<loc>' in linha:
@@ -121,26 +133,26 @@ def robots(url):
                     link = linha[start:end]
                     if link is not "":
                         insercao = Tree(link)
-                        if insercao not in urls_internas:
-                            urls_internas.append(Tree(link))
+                        if insercao not in urls_scanned:
+                            urls_scanned.append(Tree(link))
     except requests.exceptions.Timeout:
                     print('Timeout')
     except :
                     print('Timeout')
-    return urls_internas
+    return urls_scanned
 
-def complementarLinks(url):
+def is_fragment_identifier(url):
     if url is None:
         return False
     if '#' in url:
         return True
     return False
 
-def url_eh_valida(url):
+def is_valid_url(url):
     urlAnalisada = urlparse(url)
     return bool(urlAnalisada.netloc) and bool(urlAnalisada.scheme)
 
-def inicializa( root,indice):
+def start( root,indice):
     if indice == 1:
         root = crawl(root.data)
         return root
@@ -148,33 +160,25 @@ def inicializa( root,indice):
         root = crawl(root.data)
         for kids in root:
            ## print("kid: "+ kids.data)
-            kids.children =  inicializa(kids,indice-1)     
+            kids.children =  start(kids,indice-1)     
         return root
 
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="WRecon")
-    parser.add_argument("url", help="Extrator de urls")
-    parser.add_argument("-r", "--max-urls", help="Número máximo de chamadas recursivas, default é zero.", default=0, type=int)
-
-
+def main():
+   
     print(" __        ______                      ")
     print(" \ \      / /  _ \ ___  ___ ___  _ __  ")
     print("  \ \ /\ / /| |_) / _ \/ __/ _ \| '_ \ ")
     print("   \ V  V / |  _ <  __/ (_| (_) | | | |")
     print("    \_/\_/  |_| \_\___|\___\___/|_| |_|")
     
-    args = parser.parse_args()
+    args = Wrecon.parse_args(sys.argv[1:])
     url = args.url
     max_urls = args.max_urls
-
-    parsed_uri = urlparse(url)
-    url_raiz = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
-    indice=0
     
     root = Tree(url)
-    
-    root.children = inicializa (root,max_urls)
+    root.children = start (root,max_urls)
 
     print(root)
+    
+if __name__ == '__main__':
+    main()
