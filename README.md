@@ -26,3 +26,7 @@ To get a list of basic options and switches use:
 Simple usage:
 
     python wrecon.py -u http://target -r 1
+
+## License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.  
