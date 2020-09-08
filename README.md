@@ -21,12 +21,12 @@ Usage
 
 To get a list of basic options and switches use:
 
-    python wrecon.py -h
+    wrecon -h
 
 Simple usage:
 
-    python wrecon.py -u http://target -r 1
+    wrecon -u http://target -r 1
 
 ## License
 
-This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.  
+This project is licensed under the MIT license. See the [LICENSE](https://raw.githubusercontent.com/fabiodelgadopereira/wrecon/master/LICENSE) file for more info.  

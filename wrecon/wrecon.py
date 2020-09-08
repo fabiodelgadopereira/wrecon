@@ -1,7 +1,6 @@
-import requests,  urllib3, argparse, sys, re
+import requests,  urllib3, argparse, sys, re,os,colorama
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
-import colorama
 
 # coloring the prompt letters
 colorama.init()
@@ -42,7 +41,7 @@ class Wrecon:
 
     def parse_args():
         parser = argparse.ArgumentParser(description="WRecon")
-        parser.add_argument("-u", "--url", help="Url link")
+        parser.add_argument("-u", "--url", help="Url link", required=True)
         parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
         
         return parser
@@ -97,19 +96,22 @@ class Wrecon:
 
         invalid_tags = ['#','googleapis','styleshout','javascript://','use.fontawesome']
 
+        #if url is null
+        if url is  None:
+            return False
+            
         ## if the url contais outliers case
-        if url is not None:
-            for palavra in invalid_tags:
-                if palavra in url:
-                        return False
+        if any(tag in url for tag in invalid_tags):
+            return False
 
                 # if the request is not a web page      
-                data = self.request_get(url)
-                if data.status_code == 200:
-                    if  'image' not in data.headers['Content-Type']:
-                        return True
+        data = self.request_get(url)
+        if data.status_code == 200:
+            if  'image' not in data.headers['Content-Type']:
+                return True
     
     def start(self, root,indice):
+        url = root.data
         if indice == 1:
             root = self.crawl(root.data)
             return root
@@ -117,7 +119,9 @@ class Wrecon:
             root = self.crawl(root.data)
             for kids in root:
             ## print("kid: "+ kids.data)
-                kids.children =  self.start(kids,indice-1)     
+                ## avoid loopings
+                if not(str(kids.data) ==  str(url) or str(kids.data) ==  str(url+'/') ):
+                    kids.children =  self.start(kids,indice-1)     
             return root
 
     def capture(self,url,href): 
@@ -131,6 +135,7 @@ class Wrecon:
         return href
 
     def robots(self,url):
+        empty = ''
         urls_scanned = []
         ## root of website to get the robots.txt and sitemap.xml
         parsed_uri = urlparse(url)
@@ -144,7 +149,7 @@ class Wrecon:
             for linha in texto:
                 if ' /' in linha:
                     link = linha.split(' /')[1]
-                    if link is not "":
+                    if link is not empty:
                             urls_scanned.append(Tree(url+'/'+link))
 
         link_sitemap=url_root+'sitemap.xml'
@@ -157,7 +162,7 @@ class Wrecon:
                     start = linha.find("<loc>") + len("<loc>")
                     end = linha.find("</loc>")
                     link = linha[start:end]
-                    if link is not "":
+                    if link is not empty:
                         insercao = Tree(link)
                         if insercao not in urls_scanned:
                             urls_scanned.append(Tree(link))
@@ -172,14 +177,14 @@ class Wrecon:
             children =self.robots(url)
         scan_robots_and_sitemap = False
 
-        tags = [["a","href"],["link","href"],["script","src"],["img","src"],["source","src"]]
-        request = self.request_get(url)
-        if request.status_code == 200: 
-            soup = BeautifulSoup(request.content, "html.parser")	
-            for tag in tags:
-                for a_tag in (soup.findAll(tag[0])):
-                    href = a_tag.attrs.get(tag[1])
-                    if self.remove_outliers_from_recursive(url) :
+        if self.remove_outliers_from_recursive(url) :
+            tags = [["a","href"],["link","href"],["script","src"],["img","src"],["source","src"]]
+            request = self.request_get(url)
+            if request.status_code == 200: 
+                soup = BeautifulSoup(request.content, "html.parser")	
+                for tag in tags:
+                    for a_tag in (soup.findAll(tag[0])):
+                        href = a_tag.attrs.get(tag[1])
                         candidate = Tree(self.capture(url,href))
                         is_already_in_the_tree = False
                         for kids in children:
@@ -213,16 +218,23 @@ def main():
     if not w.is_valid_url(url):
         ## invalid url
         print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
-    
-    try:
-        ## create root e call start method
-        root = Tree(url)
-        root.children = w.start (root,max_urls)
+    else:
+        try:
+            ## create root e call start method
+            root = Tree(url)
+            root.children = w.start (root,max_urls)
 
-        ## print results
-        print(root)
-    except:
-        print('Sorry, an error occurred while processing your request')
+            ## print results
+            print(root)
+        except:
+            print('Sorry, an error occurred while processing your request')
     
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('Interrupted')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)

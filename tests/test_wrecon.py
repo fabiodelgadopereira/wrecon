@@ -1,6 +1,9 @@
-import unittest
+import unittest,os
 import sys 
-sys.path.append("..//wrecon//")
+testdir = os.path.dirname(__file__)
+srcdir = '../wrecon'
+sys.path.insert(0, os.path.abspath(os.path.join(testdir, srcdir)))
+print (os.path.abspath(os.path.join(testdir, srcdir)))
 from wrecon import Tree
 from wrecon import Wrecon
 
@@ -92,10 +95,10 @@ class Test(unittest.TestCase):
         self.assertEqual(data,True)
 
     def test_outliers_false(self):
-        url_test2 = 'https://www.styleshout.com/'
+        url_test3 = 'http://www.styleshout.com/'
         w=Wrecon()
-        data = w.remove_outliers_from_recursive(url_test2)
-        self.assertNotEqual(data,False)
+        data2 = w.remove_outliers_from_recursive(url_test3)
+        self.assertEqual(data2,False)
     
     def test_robots_true(self):
         url_test2 = self.URL_VALID
@@ -123,10 +126,10 @@ class Test(unittest.TestCase):
         self.assertEqual(len(root.children),37) 
     
   #  def test_start_r2(self):
-   #     root = Tree(self.URL_VALID)
-   #     w=Wrecon()
-  #      root.children = w.start (root,2)
-  #      self.assertEqual(len(root.children),28) 
+     #   root = Tree(self.URL_VALID)
+    #    w=Wrecon()
+     #   root.children = w.start (root,2)
+     #   self.assertEqual(len(root.children),28) 
     
     
     
