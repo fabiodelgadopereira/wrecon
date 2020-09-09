@@ -12,6 +12,16 @@ class Test(unittest.TestCase):
     #set from parameter
     URL_VALID='http://localhost'
 
+    def test_main_is_remove_outliers_from_recursive_javascript(self):
+        url_test2 = 'javascript://void(false);'
+        parser = Wrecon.remove_outliers_from_recursive(self,url_test2)
+        self.assertEqual(parser, False)
+    
+    def test_main_is_remove_outliers_from_recursive_none(self):
+        url_test2 = None
+        parser = Wrecon.remove_outliers_from_recursive(self,url_test2)
+        self.assertEqual(parser, False)
+
     def test_simple_tree(self):
         c= Tree("test")
         self.assertEqual(c.data, "test", "Most be test")
@@ -70,6 +80,11 @@ class Test(unittest.TestCase):
         parser = Wrecon.is_valid_url(self,url_test2)
         self.assertEqual(parser, False)
 
+    def test_main_is_valid_url_none(self):
+        url_test2 = None
+        parser = Wrecon.is_valid_url(self,url_test2)
+        self.assertEqual(parser, False)
+
     def test_request_valid(self):
         url_test2 = self.URL_VALID
         w=Wrecon()
@@ -125,11 +140,11 @@ class Test(unittest.TestCase):
         root.children = w.start (root,1)
         self.assertEqual(len(root.children),37) 
     
-  #  def test_start_r2(self):
-     #   root = Tree(self.URL_VALID)
-    #    w=Wrecon()
-     #   root.children = w.start (root,2)
-     #   self.assertEqual(len(root.children),28) 
+    def test_start_r2(self):
+       root = Tree(self.URL_VALID)
+       w=Wrecon()
+       root.children = w.start (root,2)
+       self.assertEqual(len(root.children),28) 
     
     
     

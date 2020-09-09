@@ -8,11 +8,12 @@ colorama.init()
 urllib3.disable_warnings()
 
 GREEN = colorama.Fore.GREEN
-GRAY = colorama.Fore.LIGHTBLACK_EX
+YELLOW = colorama.Fore.YELLOW
 RESET = colorama.Fore.RESET
 RED = colorama.Fore.RED
 
 scan_robots_and_sitemap = True
+verbose = False
 
 # Url tree class
 class Tree (object):
@@ -38,12 +39,13 @@ class Url (object):
         self.content = content
 
 class Wrecon:
-
+    
     def parse_args():
         parser = argparse.ArgumentParser(description="WRecon")
         parser.add_argument("-u", "--url", help="Url link", required=True)
         parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
-        
+        parser.add_argument('--disable-robots', help="Disable search for files robots.txt and sitemap.xml", action='store_false', default=True )
+        parser.add_argument("-v", "--verbose", help="Be a little more verbose and show urls before coming to a conclusion", action='store_true', default=False )
         return parser
 
     def is_fragment_identifier(self,url):
@@ -54,6 +56,9 @@ class Wrecon:
         return False
 
     def is_valid_url(self,url):
+        if url is None:
+            return False
+
         regex = re.compile(
         r'^(?:http|ftp)s?://' # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
@@ -89,11 +94,13 @@ class Wrecon:
         except requests.exceptions.HTTPError:
             print(f"{RED} HTTPError: {RESET}"+url)
             return data
-        except:
+        except requests.exceptions.ConnectionError:
+            return data
+        except urllib3.exceptions.NewConnectionError:
             return data
 
-    def remove_outliers_from_recursive(self,url):
 
+    def remove_outliers_from_recursive(self,url):
         invalid_tags = ['#','googleapis','styleshout','javascript://','use.fontawesome']
 
         #if url is null
@@ -111,6 +118,7 @@ class Wrecon:
                 return True
     
     def start(self, root,indice):
+        global verbose
         url = root.data
         if indice == 1:
             root = self.crawl(root.data)
@@ -118,7 +126,8 @@ class Wrecon:
         else:
             root = self.crawl(root.data)
             for kids in root:
-            ## print("kid: "+ kids.data)
+                if(verbose):
+                    print(f"{YELLOW} [Recusive]: {RESET}"+kids.data)
                 ## avoid loopings
                 if not(str(kids.data) ==  str(url) or str(kids.data) ==  str(url+'/') ):
                     kids.children =  self.start(kids,indice-1)     
@@ -145,10 +154,10 @@ class Wrecon:
         data = self.request_get(link_robots)
         if data.status_code == 200:
             urls_scanned.append(Tree(link_robots))
-            texto = data.text.splitlines()
-            for linha in texto:
-                if ' /' in linha:
-                    link = linha.split(' /')[1]
+            text = data.text.splitlines()
+            for line in text:
+                if ' /' in line:
+                    link = line.split(' /')[1]
                     if link is not empty:
                             urls_scanned.append(Tree(url+'/'+link))
 
@@ -156,12 +165,12 @@ class Wrecon:
         data = self.request_get(link_sitemap)
         if data.status_code == 200:
             urls_scanned.append(Tree(link_sitemap))
-            texto = data.text.splitlines()
-            for linha in texto:
-                if '<loc>' in linha:
-                    start = linha.find("<loc>") + len("<loc>")
-                    end = linha.find("</loc>")
-                    link = linha[start:end]
+            text = data.text.splitlines()
+            for line in text:
+                if '<loc>' in line:
+                    start = line.find("<loc>") + len("<loc>")
+                    end = line.find("</loc>")
+                    link = line[start:end]
                     if link is not empty:
                         insercao = Tree(link)
                         if insercao not in urls_scanned:
@@ -170,6 +179,7 @@ class Wrecon:
 
 
     def crawl(self,url):
+        global verbose
         ##Returns all URLs found between tags
         children =[]
         global scan_robots_and_sitemap
@@ -185,14 +195,17 @@ class Wrecon:
                 for tag in tags:
                     for a_tag in (soup.findAll(tag[0])):
                         href = a_tag.attrs.get(tag[1])
-                        candidate = Tree(self.capture(url,href))
-                        is_already_in_the_tree = False
-                        for kids in children:
-                            if candidate.data in kids.data:
-                                is_already_in_the_tree = True
-                        if(not is_already_in_the_tree):
-                            ##print(candidate.data)   
-                            children.append( candidate)
+                        url_candidate = self.capture(url,href)
+                        if self.is_valid_url(url_candidate):
+                            candidate = Tree(url_candidate)
+                            is_already_in_the_tree = False
+                            for kids in children:
+                                if candidate.data in kids.data:
+                                    is_already_in_the_tree = True
+                            if(not is_already_in_the_tree):
+                                if(verbose):
+                                    print(f"{GREEN} [url]: {RESET}"+candidate.data) 
+                                children.append( candidate)
         return children
 
 def main():
@@ -210,6 +223,10 @@ def main():
         args = Wrecon.parse_args().parse_args(sys.argv[1:])
         url = args.url
         max_urls = args.max_urls
+        global scan_robots_and_sitemap
+        scan_robots_and_sitemap = args.disable_robots
+        global verbose
+        verbose = args.verbose
     except:
         print('usage: wrecon.py [-h] [-u URL] [-r MAX_URLS]')
 
@@ -219,15 +236,13 @@ def main():
         ## invalid url
         print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
     else:
-        try:
             ## create root e call start method
             root = Tree(url)
             root.children = w.start (root,max_urls)
 
             ## print results
             print(root)
-        except:
-            print('Sorry, an error occurred while processing your request')
+
     
 if __name__ == '__main__':
     try:
