@@ -14,6 +14,7 @@ RED = colorama.Fore.RED
 
 scan_robots_and_sitemap = True
 verbose = False
+output = None
 
 # Url tree class
 class Tree (object):
@@ -39,13 +40,14 @@ class Url (object):
         self.content = content
 
 class Wrecon:
-    
+
     def parse_args():
         parser = argparse.ArgumentParser(description="WRecon")
         parser.add_argument("-u", "--url", help="Url link", required=True)
         parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
         parser.add_argument('--disable-robots', help="Disable search for files robots.txt and sitemap.xml", action='store_false', default=True )
         parser.add_argument("-v", "--verbose", help="Be a little more verbose and show urls before coming to a conclusion", action='store_true', default=False )
+        parser.add_argument("-o", "--output", help="Directs the output to a name of your choice", default=None)
         return parser
 
     def is_fragment_identifier(self,url):
@@ -136,7 +138,7 @@ class Wrecon:
     def capture(self,url,href): 
         ## check if it is a link inside the tags   
         if self.is_fragment_identifier(href):
-            href = url+'/'+ href
+            href = url+ '/'+href
         else:
             href = urljoin(url, href)
             href_analize = urlparse(href)
@@ -146,6 +148,7 @@ class Wrecon:
     def robots(self,url):
         empty = ''
         urls_scanned = []
+        list_sitemap = []
         ## root of website to get the robots.txt and sitemap.xml
         parsed_uri = urlparse(url)
         url_root = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
@@ -160,21 +163,28 @@ class Wrecon:
                     link = line.split(' /')[1]
                     if link is not empty:
                             urls_scanned.append(Tree(url+'/'+link))
-
-        link_sitemap=url_root+'sitemap.xml'
-        data = self.request_get(link_sitemap)
-        if data.status_code == 200:
-            urls_scanned.append(Tree(link_sitemap))
-            text = data.text.splitlines()
             for line in text:
-                if '<loc>' in line:
-                    start = line.find("<loc>") + len("<loc>")
-                    end = line.find("</loc>")
-                    link = line[start:end]
+                if 'sitemap' in line:
+                    link = line.split(' ')[1]
                     if link is not empty:
-                        insercao = Tree(link)
-                        if insercao not in urls_scanned:
-                            urls_scanned.append(Tree(link))
+                            list_sitemap.append(link)
+
+        list_sitemap.append(url_root+'sitemap.xml')
+        
+        for link_sitemap in list_sitemap:
+            data = self.request_get(link_sitemap)
+            if data.status_code == 200:
+                urls_scanned.append(Tree(link_sitemap))
+                text = data.text.splitlines()
+                for line in text:
+                    if '<loc>' in line:
+                        start = line.find("<loc>") + len("<loc>")
+                        end = line.find("</loc>")
+                        link = line[start:end]
+                        if link is not empty:
+                            insercao = Tree(link)
+                            if insercao not in urls_scanned:
+                                urls_scanned.append(Tree(link))
         return urls_scanned
 
 
@@ -221,12 +231,19 @@ def main():
     ## receive parameters
     try:
         args = Wrecon.parse_args().parse_args(sys.argv[1:])
-        url = args.url
+        
+        ##Remove last character if it's a backslash
+        url = args.url.rstrip('//')
         max_urls = args.max_urls
+
         global scan_robots_and_sitemap
         scan_robots_and_sitemap = args.disable_robots
+        
         global verbose
         verbose = args.verbose
+        
+        global output
+        output = args.output
     except:
         print('usage: wrecon.py [-h] [-u URL] [-r MAX_URLS]')
 
@@ -241,7 +258,10 @@ def main():
             root.children = w.start (root,max_urls)
 
             ## print results
-            print(root)
+            if output is not None:
+                print(root,file=open(str(output)+".txt","w"))
+            else:            
+                print(root)
 
     
 if __name__ == '__main__':

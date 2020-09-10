@@ -6,7 +6,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='wrecon',
-      version='0.5',
+      version='0.6',
       description='WRecon is an open source no intussive web scanner. It is designed to discover all URL in a website recursively, without using bruteforce or unauthorized access. It comes with a camouflage engine and nice features for pentesting.',
       url='https://github.com/fabiodelgadopereira/wrecon',
       author='Fabio Delgado',

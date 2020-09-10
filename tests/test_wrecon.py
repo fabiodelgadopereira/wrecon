@@ -65,6 +65,11 @@ class Test(unittest.TestCase):
         parser = Wrecon.is_valid_url(self,url_test)
         self.assertEqual(parser, True)
     
+    def test_main_double_html_false(self):
+        url_test = 'https://www.dodododododododorning.comhttps://www.dodododododododorning.com/page-sitemap.xml'
+        parser = Wrecon.is_valid_url(self,url_test)
+        self.assertEqual(parser, False)
+    
     def test_main_is_valid_url_false_http(self):
         url_test2 = 'httppppp://localhost:8178/'
         parser = Wrecon.is_valid_url(self,url_test2)
@@ -145,8 +150,6 @@ class Test(unittest.TestCase):
        w=Wrecon()
        root.children = w.start (root,2)
        self.assertEqual(len(root.children),28) 
-    
-    
     
 
 if __name__ == '__main__':
