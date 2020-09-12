@@ -15,6 +15,7 @@ RED = colorama.Fore.RED
 scan_robots_and_sitemap = True
 verbose = False
 output = None
+cookie = None
 
 # Url tree class
 class Tree (object):
@@ -46,6 +47,7 @@ class Wrecon:
         parser.add_argument("-u", "--url", help="Url link", required=True)
         parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
         parser.add_argument('--disable-robots', help="Disable search for files robots.txt and sitemap.xml", action='store_false', default=True )
+        parser.add_argument('--cookie', help="HTTP Cookie header value (e.g. \"PHPSESSID=a8d127e..\")", default=None)
         parser.add_argument("-v", "--verbose", help="Be a little more verbose and show urls before coming to a conclusion", action='store_true', default=False )
         parser.add_argument("-o", "--output", help="Directs the output to a name of your choice", default=None)
         return parser
@@ -56,6 +58,15 @@ class Wrecon:
         if '#' in url:
             return True
         return False
+
+    def is_valid_cookie(self,input):
+        if input is None:
+            return False
+        if '=' not in input:
+            return False
+        if len(input) < 3:
+            return False
+        return True
 
     def is_valid_url(self,url):
         if url is None:
@@ -80,7 +91,12 @@ class Wrecon:
         if(not self.is_valid_url(url)):
             return data
         try:
-            call = requests.get(url,verify=False, timeout=3, headers=headers)           
+            global cookie
+            if cookie:
+                my_cookies = {cookie.split('=')[0]: cookie.split('=')[1]}
+                call = requests.get(url,verify=False, timeout=3, headers=headers,cookies= my_cookies)    
+            else:    
+                call = requests.get(url,verify=False, timeout=3, headers=headers)        
             call.raise_for_status()
             if call.status_code == 200:
                 return call
@@ -228,13 +244,22 @@ def main():
     
     url =''
     max_urls = ''
+    w=Wrecon()
     ## receive parameters
     try:
         args = Wrecon.parse_args().parse_args(sys.argv[1:])
         
+        if(not w.is_valid_url(args.url.rstrip('//'))):
+            print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
+            raise TypeError("not a valid URL")
+
         ##Remove last character if it's a backslash
         url = args.url.rstrip('//')
         max_urls = args.max_urls
+
+        if w.is_valid_cookie(args.cookie):
+            global cookie
+            cookie = args.cookie
 
         global scan_robots_and_sitemap
         scan_robots_and_sitemap = args.disable_robots
@@ -244,24 +269,19 @@ def main():
         
         global output
         output = args.output
+
     except:
         print('usage: wrecon.py [-h] [-u URL] [-r MAX_URLS]')
+   
+    ## create root e call start method
+    root = Tree(url)
+    root.children = w.start (root,max_urls)
 
-    w=Wrecon()
-    ## validate URL
-    if not w.is_valid_url(url):
-        ## invalid url
-        print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
-    else:
-            ## create root e call start method
-            root = Tree(url)
-            root.children = w.start (root,max_urls)
-
-            ## print results
-            if output is not None:
-                print(root,file=open(str(output)+".txt","w"))
-            else:            
-                print(root)
+    ## print results
+    if output is not None:
+        print(root,file=open(str(output)+".txt","w"))
+    else:            
+        print(root)
 
     
 if __name__ == '__main__':

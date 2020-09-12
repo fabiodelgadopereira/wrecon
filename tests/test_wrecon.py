@@ -151,6 +151,36 @@ class Test(unittest.TestCase):
        root.children = w.start (root,2)
        self.assertEqual(len(root.children),28) 
     
+    def test_request_invalid_cookie_None(self):
+        url_test2 = None
+        w=Wrecon()
+        data = w.is_valid_cookie(url_test2)
+        self.assertEqual(data,False)
+
+    def test_request_invalid_cookie_short(self):
+        url_test2 = 'as'
+        w=Wrecon()
+        data = w.is_valid_cookie(url_test2)
+        self.assertEqual(data,False)
+    
+    def test_request_invalid_cookie_short_with_iqual(self):
+        url_test2 = '=s'
+        w=Wrecon()
+        data = w.is_valid_cookie(url_test2)
+        self.assertEqual(data,False)
+
+    def test_request_invalid_cookie_large_string(self):
+        url_test2 = 'aaaaaaaaaaaaaaaaaaaaaa'
+        w=Wrecon()
+        data = w.is_valid_cookie(url_test2)
+        self.assertEqual(data,False)
+    
+    def test_request_invalid_cookie_valid(self):
+        url_test2 = 'PHP=123'
+        w=Wrecon()
+        data = w.is_valid_cookie(url_test2)
+        self.assertEqual(data,True)
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
