@@ -70,15 +70,20 @@ class Test(unittest.TestCase):
         parser = Wrecon.is_valid_url(self,url_test)
         self.assertEqual(parser, False)
     
+    def test_main_html_interno(self):
+        url_test = 'http://sqoui0098xpt/reports/mobile'
+        parser = Wrecon.is_valid_url(self,url_test)
+        self.assertEqual(parser, True)
+    
     def test_main_is_valid_url_false_http(self):
         url_test2 = 'httppppp://localhost:8178/'
         parser = Wrecon.is_valid_url(self,url_test2)
         self.assertEqual(parser, False)
     
     def test_main_is_valid_url_false_number(self):
-        url_test2 = 'http://localh1ost/'
+        url_test2 = 'http://local1ost/'
         parser = Wrecon.is_valid_url(self,url_test2)
-        self.assertEqual(parser, False)
+        self.assertEqual(parser, True)
     
     def test_main_is_valid_url_javascript(self):
         url_test2 = 'javascript:void(false);'
@@ -180,6 +185,30 @@ class Test(unittest.TestCase):
         w=Wrecon()
         data = w.is_valid_cookie(url_test2)
         self.assertEqual(data,True)
+
+    def test_main_is_capture_double(self):
+        url_test = 'http://localhost:8178/api-docs/#/'
+        href = '//testasdasdhaujs.com'
+        result = 'https://testasdasdhaujs.com'
+        w=Wrecon()
+        parser = w.capture(url_test,href)
+        self.assertEqual(parser, result)
+
+    def test_main_is_capture_fragment_identifier_true(self):
+        url_test = 'http://localhost:8178/api-docs'
+        href = '#abrir'
+        result = 'http://localhost:8178/api-docs/#abrir'
+        w=Wrecon()
+        parser = w.capture(url_test,href)
+        self.assertEqual(parser, result)
+
+    def test_main_is_capture_None_true(self):
+        url_test = 'http://localhost:8178/api-docs/'
+        href = None
+        result = None
+        w = Wrecon()
+        parser = w.capture(url_test,href)
+        self.assertEqual(parser, result)
 
 
 if __name__ == '__main__':

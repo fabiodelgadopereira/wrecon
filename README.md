@@ -1,5 +1,10 @@
 # WRecon 
 
+[![Python 3.x](https://img.shields.io/badge/python-v3.7-blue)](https://www.python.org/)[![License](https://img.shields.io/badge/license-GPLv2-red.svg)](https://raw.githubusercontent.com/fabiodelgadopereira/wrecon/master/LICENSE)
+[![PyPI version](https://badge.fury.io/py/wrecon.svg)](https://badge.fury.io/py/wrecon)
+
+[![Python 3.x](https://img.shields.io/badge/python-v3.7-blue)](https://www.python.org/)
+
 WRecon is an open source no intussive web scanner. It is designed to discover all URL in a website recursively, without using bruteforce or unauthorized access. It comes with a camouflage engine and nice features for pentesting.
 
 Screenshots

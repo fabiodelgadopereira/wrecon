@@ -71,14 +71,12 @@ class Wrecon:
     def is_valid_url(self,url):
         if url is None:
             return False
+        
+        if url.count('://') > 1:
+            return False
 
         regex = re.compile(
-        r'^(?:http|ftp)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-        r'localhost|' #localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-        r'(?::\d+)?' # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))")
 
         return re.match(regex, url) is not None
 
@@ -155,11 +153,17 @@ class Wrecon:
         ## check if it is a link inside the tags   
         if self.is_fragment_identifier(href):
             href = url+ '/'+href
-        else:
-            href = urljoin(url, href)
-            href_analize = urlparse(href)
-            href = href_analize.scheme + "://" + href_analize.netloc + href_analize.path
+        elif href is not None:
+            if href[0:2] == '//':
+                href = 'https:' + href
+            else:
+                if 'http' not in href:
+                    href = urljoin(url, href)
+                    href_analize = urlparse(href)
+                    href = href_analize.scheme + "://" + href_analize.netloc + href_analize.path
+
         return href
+
 
     def robots(self,url):
         empty = ''
