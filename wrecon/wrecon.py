@@ -182,7 +182,7 @@ class Wrecon:
                 if ' /' in line:
                     link = line.split(' /')[1]
                     if link is not empty:
-                            urls_scanned.append(Tree(url+'/'+link))
+                            urls_scanned.append(Tree(url_root+link))
             for line in text:
                 if 'sitemap' in line:
                     link = line.split(' ')[1]
