@@ -43,7 +43,7 @@ class Url (object):
 class Wrecon:
 
     def parse_args():
-        parser = argparse.ArgumentParser(description="WRecon")
+        parser = argparse.ArgumentParser()
         parser.add_argument("-u", "--url", help="Url link", required=True)
         parser.add_argument("-r", "--max-urls", help="Maximum number of recursive calls, default is one.", default=1, type=int)
         parser.add_argument('--disable-robots', help="Disable search for files robots.txt and sitemap.xml", action='store_false', default=True )
@@ -240,42 +240,45 @@ class Wrecon:
 
 def main():
    
-    print(" __        ______                      ")
-    print(" \ \      / /  _ \ ___  ___ ___  _ __  ")
-    print("  \ \ /\ / /| |_) / _ \/ __/ _ \| '_ \ ")
-    print("   \ V  V / |  _ <  __/ (_| (_) | | | |")
-    print("    \_/\_/  |_| \_\___|\___\___/|_| |_|")
-    
+
+    print("                                                         ")
+    print("    ██     ██ ██████  ███████  ██████  ██████  ███    ██ ")
+    print("    ██     ██ ██   ██ ██      ██      ██    ██ ████   ██ ")
+    print("    ██  █  ██ ██████  █████   ██      ██    ██ ██ ██  ██ ")
+    print("    ██ ███ ██ ██   ██ ██      ██      ██    ██ ██  ██ ██ ")
+    print("     ███ ███  ██   ██ ███████  ██████  ██████  ██   ████ ")
+    print("                                                         ")
+                                                     
+
     url =''
     max_urls = ''
     w=Wrecon()
     ## receive parameters
-    try:
-        args = Wrecon.parse_args().parse_args(sys.argv[1:])
+
+    args = Wrecon.parse_args().parse_args(sys.argv[1:])
         
-        if(not w.is_valid_url(args.url.rstrip('//'))):
-            print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
-            raise TypeError("not a valid URL")
+    if(not w.is_valid_url(args.url.rstrip('//'))):
+        print('The parameter URL are badly formed or contains invalid characters. Follow the example: http://localhost:800/')
+        raise TypeError("not a valid URL")
 
         ##Remove last character if it's a backslash
-        url = args.url.rstrip('//')
-        max_urls = args.max_urls
+    url = args.url.rstrip('//')
+    max_urls = args.max_urls
 
-        if w.is_valid_cookie(args.cookie):
-            global cookie
-            cookie = args.cookie
+    if w.is_valid_cookie(args.cookie):
+        global cookie
+        cookie = args.cookie
 
-        global scan_robots_and_sitemap
-        scan_robots_and_sitemap = args.disable_robots
+    global scan_robots_and_sitemap
+    scan_robots_and_sitemap = args.disable_robots
         
-        global verbose
-        verbose = args.verbose
+    global verbose
+    verbose = args.verbose
         
-        global output
-        output = args.output
+    global output
+    output = args.output
 
-    except:
-        print('usage: wrecon.py [-h] [-u URL] [-r MAX_URLS]')
+  
    
     ## create root e call start method
     root = Tree(url)
